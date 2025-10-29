@@ -1,29 +1,88 @@
 <!doctype html>
-<html lang="ar">
-<head><meta charset="utf-8"><title>لوحة الطلبات</title>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>شركة تجريبية — لوحة الإدارة</title>
 <style>
-body{font-family:Tajawal,Arial,sans-serif;direction:rtl;background:#f7f9fc;margin:0}
-h2{background:#4f46e5;color:#fff;margin:0;padding:14px}
-table{width:100%;border-collapse:collapse;background:#fff}
-th,td{border:1px solid #e5e7eb;padding:8px;font-size:14px}
-.wrap{max-width:1200px;margin:16px auto;background:#fff;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,.06);overflow:hidden}
+:root{--p:#0ea5e9;--bg:#f8fafc;--card:#fff;--muted:#64748b}
+body{font-family:Tajawal,Arial,sans-serif;background:var(--bg);margin:0;color:#0f172a}
+header{background:var(--p);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+.wrap{max-width:1200px;margin:18px auto;padding:0 12px}
+.card{background:var(--card);border-radius:14px;box-shadow:0 10px 25px rgba(0,0,0,.06);margin-bottom:12px;padding:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+input,select,button{padding:10px;border-radius:10px;border:1px solid #e5e7eb}
+button{background:#0f172a;color:#fff;border:0;cursor:pointer}
+table{width:100%;border-collapse:collapse}
+th,td{border-bottom:1px solid #f1f5f9;padding:10px;text-align:right;vertical-align:top}
+.meta{color:var(--muted);font-size:12px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px}
+.bNew{background:#e0f2fe;color:#0369a1}.bClaimed{background:#fef3c7;color:#92400e}.bDel{background:#dcfce7;color:#166534}
+audio{width:220px}
 </style>
 </head>
 <body>
-<h2>الطلبات (عرض سريع)</h2>
+<header>
+  <h2>شركة تجريبية — لوحة الإدارة</h2>
+  <div class="meta">عرض الطلبات من Google Sheets مباشرة</div>
+</header>
+
 <div class="wrap">
-  <table id="t"><thead></thead><tbody></tbody></table>
+  <div class="card">
+    <div class="row">
+      <select id="status">
+        <option value="">كل الحالات</option>
+        <option value="New">جديد</option>
+        <option value="Claimed">محجوز</option>
+        <option value="Delivered">مُسلّم</option>
+      </select>
+      <input id="q" placeholder="بحث بالاسم/الهاتف/العنوان/المعرّف">
+      <button id="refresh">تحديث</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="tblWrap"></div>
+  </div>
 </div>
+
 <script>
+document.getElementById('refresh').onclick = load;
+function badge(s){ if(s==='New')return'<span class="badge bNew">جديد</span>'; if(s==='Claimed')return'<span class="badge bClaimed">محجوز</span>'; if(s==='Delivered')return'<span class="badge bDel">مُسلّم</span>'; return s; }
+
 async function load(){
-  const r = await fetch('/api/admin/orders');
-  const j = await r.json();
-  const rows = j.rows||[];
-  if(!rows.length) return;
-  const thead = document.querySelector('#t thead');
-  const tbody = document.querySelector('#t tbody');
-  thead.innerHTML = '<tr>' + rows[0].map(h=>`<th>${h}</th>`).join('') + '</tr>';
-  tbody.innerHTML = rows.slice(1).map(r=>'<tr>'+r.map(c=>`<td>${c||''}</td>`).join('')+'</tr>').join('');
+  const res = await fetch('/api/admin/orders'); const j=await res.json();
+  if(!j.ok){ document.getElementById('tblWrap').innerHTML='<div class="meta">تعذر تحميل البيانات.</div>'; return; }
+  const rows=j.rows||[]; const q=document.getElementById('q').value.trim().toLowerCase(); const st=document.getElementById('status').value;
+
+  let html = `<table><thead><tr>
+    <th>الطلب</th><th>العميل</th><th>العنوان</th><th>الإجمالي</th><th>الصوت</th><th>الحالة</th><th>السائق</th><th>الأزمنة</th>
+  </tr></thead><tbody>`;
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i];
+    const id=r[0]||'', created=r[1]||'', chan=r[2]||'', name=r[3]||'', phone=r[4]||'', addr=r[5]||'';
+    const items=r[6]||'', total=r[7]||'0', audio=r[8]||'', trans=r[9]||'';
+    const status=r[10]||'New', claimedBy=r[11]||'', claimedAt=r[12]||'', deliveredAt=r[13]||'';
+
+    if (st && status!==st) continue;
+    const blob = (id+name+phone+addr+items).toLowerCase();
+    if (q && !blob.includes(q)) continue;
+
+    html += `<tr>
+      <td><div><strong>#${id.slice(0,8)}</strong> <span class="meta">${new Date(created).toLocaleString('ar-KW')}</span><div class="meta">${chan==='voice'?'اتصال':'ويب'}</div></div></td>
+      <td><div>${name||'—'}</div><div class="meta">${phone||''}</div></td>
+      <td>${addr||'—'}</td>
+      <td>${total||'0'}</td>
+      <td>${audio? `<audio controls src="${audio}"></audio>` : '<span class="meta">—</span>'}</td>
+      <td>${badge(status)}</td>
+      <td>${claimedBy||'—'}</td>
+      <td><div class="meta">استلام: ${claimedAt? new Date(claimedAt).toLocaleString('ar-KW'):'—'}</div>
+          <div class="meta">تسليم: ${deliveredAt? new Date(deliveredAt).toLocaleString('ar-KW'):'—'}</div>
+          ${trans? `<div class="meta">تفريغ: ${trans}</div>`:''}
+      </td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('tblWrap').innerHTML = html;
 }
 load();
 </script>
