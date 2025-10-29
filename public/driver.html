@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>شركة تجريبية — لوحة السائق</title>
+<style>
+:root{--p:#2563eb;--bg:#f8fafc;--card:#fff;--muted:#64748b;--ok:#16a34a;--warn:#f59e0b}
+body{font-family:Tajawal,Arial,sans-serif;background:var(--bg);margin:0;color:#0f172a}
+header{background:var(--p);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+.wrap{max-width:1100px;margin:18px auto;padding:0 12px}
+.card{background:var(--card);border-radius:14px;box-shadow:0 10px 25px rgba(0,0,0,.06);margin-bottom:12px;padding:14px}
+h2,h3{margin:6px 0}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+input,button{padding:10px;border-radius:10px;border:1px solid #e5e7eb}
+button{background:var(--p);color:#fff;border:0;cursor:pointer}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px}
+.badge.new{background:#e0f2fe;color:#0369a1}
+.badge.claimed{background:#fef3c7;color:#92400e}
+.badge.delivered{background:#dcfce7;color:#166534}
+.meta{color:var(--muted);font-size:13px}
+.actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+audio{width:100%;outline:none}
+.footer{color:var(--muted);font-size:12px;margin-top:8px}
+.notice{background:#ecfeff;border:1px solid #a5f3fc;color:#0e7490;padding:10px;border-radius:10px;margin:10px 0}
+.error{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px;border-radius:10px;margin:10px 0}
+.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:10px;border-radius:10px;margin:10px 0}
+.kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;background:#e2e8f0;border-radius:6px;padding:1px 6px}
+</style>
+</head>
+<body>
+<header>
+  <h2>شركة تجريبية — لوحة السائق</h2>
+  <div id="me" class="meta"></div>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h3>تسجيل سائق</h3>
+    <div class="row">
+      <input id="driverPhone" placeholder="اكتب رقم هاتفك بصيغة دولية: 96597361957">
+      <input id="driverName" placeholder="اسم السائق (اختياري)">
+      <button id="save">حفظ</button>
+      <button id="refresh">تحديث القائمة</button>
+    </div>
+    <div id="flash"></div>
+    <div class="footer">تلميح: يُحجز الطلب لأول سائق يضغط زر <span class="kbd">استلام الطلب</span>.</div>
+  </div>
+
+  <div class="card">
+    <h3>طلبات جديدة</h3>
+    <div id="newList"></div>
+  </div>
+
+  <div class="card">
+    <h3>طلباتي</h3>
+    <div id="mineList"></div>
+  </div>
+</div>
+
+<script>
+const flash = document.getElementById('flash');
+const me = document.getElementById('me');
+const phoneInput = document.getElementById('driverPhone');
+const nameInput  = document.getElementById('driverName');
+
+document.getElementById('save').onclick = ()=>{
+  const p = phoneInput.value.trim();
+  const n = nameInput.value.trim();
+  if(!/^\d{8,15}$/.test(p)){ flash.innerHTML = '<div class="error">رجاءً اكتب رقم الهاتف بصيغة دولية صحيحة (بدون +).</div>'; return; }
+  localStorage.setItem('driverPhone', p);
+  if(n) localStorage.setItem('driverName', n);
+  renderMe();
+  flash.innerHTML = '<div class="ok">تم حفظ بياناتك.</div>';
+  load();
+};
+document.getElementById('refresh').onclick = load;
+
+function renderMe(){
+  const p = localStorage.getItem('driverPhone')||'—';
+  const n = localStorage.getItem('driverName')||'سائق';
+  me.textContent = `مرحبًا ${n} — ${p}`;
+  phoneInput.value = localStorage.getItem('driverPhone')||'';
+  nameInput.value  = localStorage.getItem('driverName')||'';
+}
+renderMe();
+
+async function load(){
+  const res = await fetch('/api/admin/orders');
+  const j = await res.json();
+  if(!j.ok){ flash.innerHTML='<div class="error">فشل جلب الطلبات.</div>'; return; }
+  const rows = j.rows || [];
+  // headers for Orders:
+  // ['order_id','created_at','channel','client_name','phone','address','items_json','total_usd','audio_url','transcript','status','claimed_by','claimed_at','delivered_at','driver_phone']
+  const listNew = [];
+  const listMine = [];
+  const myPhone = localStorage.getItem('driverPhone')||'';
+
+  for(let i=1;i<rows.length;i++){
+    const r = rows[i];
+    const orderId = r[0]; const createdAt=r[1]; const channel=r[2]||'web';
+    const client=r[3]||''; const phone=r[4]||''; const address=r[5]||'';
+    const itemsJson=r[6]||'[]'; const total=r[7]||'0';
+    const audio=r[8]||''; const transcript=r[9]||'';
+    const status=r[10]||'New'; const claimedBy=r[11]||''; const deliveredAt=r[13]||'';
+    let items = [];
+    try{ items = JSON.parse(itemsJson); }catch(_){}
+
+    const card = [];
+    card.push(`<div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div><strong>طلب #${orderId.slice(0,8)}</strong> ${badge(status)}</div>
+        <div class="meta">${new Date(createdAt).toLocaleString('ar-KW')}</div>
+      </div>
+      <div class="meta">القناة: ${channel==='voice'?'اتصال صوتي':'الويب'}</div>
+      <div>العميل: <strong>${client||'—'}</strong> — ${phone||''}</div>
+      <div>العنوان: ${address||'—'}</div>
+      ${items.length? `<ul>${items.map(i=>`<li>${i.name} × ${i.qty} — ${(i.qty*i.price).toFixed(2)} USD</li>`).join('')}</ul>` : ''}
+      ${Number(total)? `<div><strong>الإجمالي:</strong> ${total} USD</div>`:''}
+      ${audio? `<div style="margin-top:8px"><div class="meta">تسجيل صوت العميل:</div><audio controls src="${audio}"></audio></div>`:''}
+      ${transcript? `<div class="meta" style="margin-top:6px">تفريغ صوتي: ${escapeHtml(transcript)}</div>`:''}
+      <div class="actions">
+        ${status==='New' ? `<button onclick="claim('${orderId}')">استلام الطلب</button>`:''}
+        ${(status==='Claimed' && claimedBy===myPhone) ? `<button onclick="markDelivered('${orderId}')">تم التوصيل</button>`:''}
+      </div>
+    </div>`);
+
+    const html = card.join('');
+    if(status==='New'){
+      listNew.push(html);
+    } else if ((status==='Claimed' && claimedBy===myPhone) || (status==='Delivered' && claimedBy===myPhone)){
+      listMine.push(html);
+    }
+  }
+
+  document.getElementById('newList').innerHTML  = listNew.join('') || '<div class="notice">لا توجد طلبات جديدة الآن.</div>';
+  document.getElementById('mineList').innerHTML = listMine.join('') || '<div class="notice">لم تستلم أي طلب بعد.</div>';
+}
+// helper
+function badge(s){
+  if(s==='New') return `<span class="badge new">جديد</span>`;
+  if(s==='Claimed') return `<span class="badge claimed">محجوز</span>`;
+  if(s==='Delivered') return `<span class="badge delivered">مُسلّم</span>`;
+  return `<span class="badge">${s}</span>`;
+}
+function escapeHtml(t){return t.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]));}
+
+async function claim(orderId){
+  const phone = (localStorage.getItem('driverPhone')||'').trim();
+  if(!/^\d{8,15}$/.test(phone)){ flash.innerHTML='<div class="error">احفظ رقم هاتفك أولًا.</div>'; return; }
+  const url = `/driver/claim?o=${encodeURIComponent(orderId)}&d=${encodeURIComponent(phone)}`;
+  const res = await fetch(url);
+  const txt = await res.text();
+  flash.innerHTML = txt.includes('✅') ? `<div class="ok">${txt}</div>` : `<div class="error">${txt}</div>`;
+  load();
+}
+async function markDelivered(orderId){
+  const phone = (localStorage.getItem('driverPhone')||'').trim();
+  const name  = (localStorage.getItem('driverName')||'').trim();
+  const res = await fetch('/api/mark-delivered',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId, driverPhone:phone, driverName:name})});
+  const j = await res.json();
+  flash.innerHTML = j.ok ? '<div class="ok">تم تسجيل التسليم.</div>' : `<div class="error">${j.error||'خطأ'}</div>`;
+  load();
+}
+
+load(); setInterval(load, 5000);
+</script>
+</body>
+</html>
