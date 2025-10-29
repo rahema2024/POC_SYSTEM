@@ -2,24 +2,24 @@
 <html lang="ar">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>المتجر التجريبي</title>
+<title>المتجر</title>
 <style>
-  :root{--p:#4f46e5;--bg:#f7f9fc;--card:#fff;--txt:#111827}
-  body{font-family:Tajawal,Arial,sans-serif;background:var(--bg);margin:0;direction:rtl;color:var(--txt)}
-  header{background:var(--p);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
-  .wrap{display:flex;gap:20px;max-width:1200px;margin:24px auto;padding:0 16px}
-  .grid{flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
-  .card{background:var(--card);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.06);padding:14px;transition:.2s}
-  .card:hover{transform:translateY(-2px)}
-  .card h4{margin:8px 0}
-  .price{color:#10b981;font-weight:700}
-  .btn{background:var(--p);color:#fff;border:0;padding:10px 12px;border-radius:10px;cursor:pointer}
-  aside{width:360px;background:var(--card);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.06);padding:16px;height:fit-content;position:sticky;top:20px}
-  label{display:block;margin-top:10px;font-weight:600}
-  input,textarea{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;margin-top:6px}
-  .total{display:flex;justify-content:space-between;margin-top:10px;font-weight:700}
-  .muted{color:#6b7280;font-size:12px}
-  .cart-item{display:flex;justify-content:space-between}
+:root{--p:#4f46e5;--bg:#f7f9fc;--card:#fff;--txt:#111827}
+body{font-family:Tajawal,Arial,sans-serif;background:var(--bg);margin:0;direction:rtl;color:var(--txt)}
+header{background:var(--p);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+.wrap{display:flex;gap:20px;max-width:1200px;margin:20px auto;padding:0 16px}
+.grid{flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.card{background:var(--card);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.06);padding:14px}
+.card h4{margin:8px 0}.price{color:#10b981;font-weight:700}
+.btn{background:var(--p);color:#fff;border:0;padding:10px 12px;border-radius:10px;cursor:pointer}
+aside{width:360px;background:var(--card);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.06);padding:16px;height:fit-content;position:sticky;top:20px}
+label{display:block;margin-top:10px;font-weight:600}
+input{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;margin-top:6px}
+.total{display:flex;justify-content:space-between;margin-top:10px;font-weight:700}
+.muted{color:#6b7280;font-size:12px}
+.cart-item{display:flex;justify-content:space-between}
+.success{background:#ecfeff;color:#0e7490;border:1px solid #a5f3fc;border-radius:10px;padding:10px;margin-top:10px}
+.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:10px;padding:10px;margin-top:10px}
 </style>
 </head>
 <body>
@@ -38,11 +38,10 @@
     <label>الاسم<input id="name" required></label>
     <label>الهاتف<input id="phone" required></label>
     <label>العنوان<input id="address" required></label>
-    <label>تسجيل صوتي (اختياري)<input type="file" id="audio" accept="audio/*"></label>
     <button class="btn" id="checkout">إرسال الطلب</button>
-    <div class="muted" id="msg"></div>
+    <div id="flash"></div>
     <hr>
-    <div class="muted">ملاحظة: الطلبات الصوتية عبر الهاتف تُسجَّل تلقائيًا وتُرسل للسائقين.</div>
+    <div class="muted">ملاحظة: الطلبات عبر الهاتف تُعالج بذكاء اصطناعي وتُسجّل تلقائيًا.</div>
   </aside>
 </div>
 
@@ -57,37 +56,26 @@ const PRODUCTS = [
   {id:7, name:"شاي", price:1.8},
   {id:8, name:"زيت 1.8L", price:5.4}
 ];
-
-const productsEl = document.getElementById('products');
-const cartEl = document.getElementById('cart');
-const totalEl = document.getElementById('total');
-const msgEl = document.getElementById('msg');
-const cart = [];
-
+const productsEl=document.getElementById('products');
+const cartEl=document.getElementById('cart');
+const totalEl=document.getElementById('total');
+const flash=document.getElementById('flash');
+const cart=[];
 function renderProducts(){
-  productsEl.innerHTML = PRODUCTS.map(p => `
-    <div class="card">
-      <h4>${p.name}</h4>
+  productsEl.innerHTML = PRODUCTS.map(p=>`
+    <div class="card"><h4>${p.name}</h4>
       <div class="price">${p.price} USD</div>
       <button class="btn" onclick="add(${p.id})">أضف للعربة</button>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 function add(id){
-  const p = PRODUCTS.find(x=>x.id===id);
-  const item = cart.find(x=>x.id===id);
-  if(item) item.qty++; else cart.push({...p, qty:1});
-  renderCart();
+  const p=PRODUCTS.find(x=>x.id===id); const it=cart.find(x=>x.id===id);
+  if(it) it.qty++; else cart.push({...p, qty:1}); renderCart();
 }
 function renderCart(){
-  if (!cart.length){ cartEl.innerHTML = '<div class="muted">لا توجد عناصر بعد</div>'; totalEl.textContent='0'; return; }
-  cartEl.innerHTML = cart.map(i => `
-    <div class="cart-item">
-      <div>${i.name} × ${i.qty}</div>
-      <div>${(i.qty*i.price).toFixed(2)} USD</div>
-    </div>
-  `).join('');
-  totalEl.textContent = cart.reduce((s,i)=>s+i.qty*i.price,0).toFixed(2);
+  if(!cart.length){ cartEl.innerHTML='<div class="muted">لا توجد عناصر بعد</div>'; totalEl.textContent='0'; return; }
+  cartEl.innerHTML=cart.map(i=>`<div class="cart-item"><div>${i.name} × ${i.qty}</div><div>${(i.qty*i.price).toFixed(2)} USD</div></div>`).join('');
+  totalEl.textContent=cart.reduce((s,i)=>s+i.qty*i.price,0).toFixed(2);
 }
 renderProducts(); renderCart();
 
@@ -95,24 +83,15 @@ document.getElementById('checkout').onclick = async ()=>{
   const name = document.getElementById('name').value.trim();
   const phone = document.getElementById('phone').value.trim();
   const address = document.getElementById('address').value.trim();
-  const audio = document.getElementById('audio').files[0];
-  if(!name || !phone || !address || cart.length===0){ alert('أكمل البيانات وأضف منتجًا'); return; }
-
-  const fd = new FormData();
-  fd.append('name', name);
-  fd.append('phone', phone);
-  fd.append('address', address);
-  fd.append('items', JSON.stringify(cart));
-  fd.append('total', totalEl.textContent);
-  if (audio) fd.append('audio', audio);
-
-  const res = await fetch('/api/cart/checkout', { method:'POST', body:fd });
+  if(!name || !phone || !address || cart.length===0){ flash.innerHTML='<div class="error">أكمل البيانات وأضف منتجًا</div>'; return; }
+  const payload = { name, phone, address, items: JSON.stringify(cart), total: totalEl.textContent };
+  const res = await fetch('/api/cart/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const j = await res.json();
   if (j.ok){
-    msgEl.textContent = '✅ تم إرسال الطلب وإشعار السائقين. رقم الطلب: ' + j.orderId;
+    flash.innerHTML = '<div class="success">✅ تم إرسال الطلب وإشعار فريق التوصيل. رقم الطلب: '+j.orderId+'</div>';
     cart.length=0; renderCart(); totalEl.textContent='0';
   } else {
-    msgEl.textContent = '❌ ' + (j.error||'خطأ غير معروف');
+    flash.innerHTML = '<div class="error">❌ '+(j.error||'خطأ غير معروف')+'</div>';
   }
 };
 </script>
