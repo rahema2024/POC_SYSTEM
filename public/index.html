@@ -1,33 +1,104 @@
 <!doctype html>
 <html lang="ar">
-<head><meta charset="utf-8"><title>المتجر - POC</title></head>
-<body style="direction:rtl;font-family:Arial">
-  <h2>متجر تجريبي</h2>
-  <p>أضف منتج إلى العربة ثم اضغط Checkout</p>
-  <div id="cart">العربة: <span id="items">--</span></div>
-  <hr>
+<head>
+<meta charset="UTF-8">
+<title>نظام إدارة طلبات - عرض تجريبي</title>
+<style>
+  body {
+    font-family: "Tajawal", Arial, sans-serif;
+    background: #f7f9fc;
+    margin: 0;
+    padding: 0;
+    direction: rtl;
+    text-align: right;
+  }
+  .container {
+    width: 400px;
+    margin: 60px auto;
+    background: #fff;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgb(0 0 0 / 0.1);
+  }
+  h2 {
+    text-align: center;
+    color: #293241;
+    margin-bottom: 20px;
+  }
+  label {
+    font-weight: bold;
+    margin-top: 12px;
+    display: block;
+    color: #293241;
+  }
+  input, textarea {
+    width: 100%;
+    padding: 12px;
+    margin-top: 6px;
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+    outline: none;
+  }
+  textarea { height: 70px; resize: none; }
+  button {
+    width: 100%;
+    background: #4f46e5;
+    color: white;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    margin-top: 20px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  button:hover { background: #3730a3; }
+  small {
+    color: #6b7280;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>طلب جديد</h2>
   <form id="orderForm" enctype="multipart/form-data">
-    <label>الاسم: <input name="name" required></label><br/>
-    <label>الهاتف: <input name="phone" required></label><br/>
-    <label>العنوان: <input name="address" required></label><br/>
-    <label>تفاصيل الطلب (JSON أو نص): <textarea name="items">{"item":"مثال","qty":1}</textarea></label><br/>
-    <label>تسجيل صوتي (اختياري): <input type="file" name="audio" accept="audio/*"></label><br/>
-    <label>المجموع (USD): <input name="total" value="0"></label><br/>
+    <label>الاسم:</label>
+    <input name="name" required>
+
+    <label>رقم الهاتف:</label>
+    <input name="phone" required>
+
+    <label>العنوان:</label>
+    <input name="address" required>
+
+    <label>تفاصيل الطلب:</label>
+    <textarea name="items" placeholder='مثال: {"item":"بيبسي","qty":1}'></textarea>
+
+    <label>تسجيل صوتي (اختياري):</label>
+    <input type="file" name="audio" accept="audio/*">
+
     <button type="submit">إرسال الطلب</button>
   </form>
+</div>
 
-  <script>
-    const form = document.getElementById('orderForm');
-    form.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const fd = new FormData(form);
-      const res = await fetch('/api/web-order', { method:'POST', body: fd });
-      const j = await res.json();
-      if (j.ok) {
-        alert('تم إرسال الطلب — شكراً');
-        if (j.checkoutUrl) window.location = j.checkoutUrl; // Stripe checkout
-      } else alert('خطأ: ' + (j.error || 'unknown'));
-    });
-  </script>
+
+<script>
+const form = document.getElementById('orderForm');
+form.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const fd = new FormData(form);
+  const res = await fetch('/api/web-order', { method:'POST', body: fd });
+  const j = await res.json();
+  if (j.ok) {
+    alert('✅ تم إرسال الطلب بنجاح');
+    form.reset();
+  } else {
+    alert('❌ حدث خطأ: ' + (j.error || 'غير معروف'));
+  }
+});
+</script>
+
 </body>
 </html>
