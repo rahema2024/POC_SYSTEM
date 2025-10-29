@@ -89,8 +89,7 @@ async function load(){
   const j = await res.json();
   if(!j.ok){ flash.innerHTML='<div class="error">فشل جلب الطلبات.</div>'; return; }
   const rows = j.rows || [];
-  // headers for Orders:
-  // ['order_id','created_at','channel','client_name','phone','address','items_json','total_usd','audio_url','transcript','status','claimed_by','claimed_at','delivered_at','driver_phone']
+
   const listNew = [];
   const listMine = [];
   const myPhone = localStorage.getItem('driverPhone')||'';
@@ -102,6 +101,7 @@ async function load(){
     const itemsJson=r[6]||'[]'; const total=r[7]||'0';
     const audio=r[8]||''; const transcript=r[9]||'';
     const status=r[10]||'New'; const claimedBy=r[11]||''; const deliveredAt=r[13]||'';
+
     let items = [];
     try{ items = JSON.parse(itemsJson); }catch(_){}
 
@@ -114,10 +114,9 @@ async function load(){
       <div class="meta">القناة: ${channel==='voice'?'اتصال صوتي':'الويب'}</div>
       <div>العميل: <strong>${client||'—'}</strong> — ${phone||''}</div>
       <div>العنوان: ${address||'—'}</div>
-      ${items.length? `<ul>${items.map(i=>`<li>${i.name} × ${i.qty} — ${(i.qty*i.price).toFixed(2)} USD</li>`).join('')}</ul>` : ''}
-      ${Number(total)? `<div><strong>الإجمالي:</strong> ${total} USD</div>`:''}
       ${audio? `<div style="margin-top:8px"><div class="meta">تسجيل صوت العميل:</div><audio controls src="${audio}"></audio></div>`:''}
       ${transcript? `<div class="meta" style="margin-top:6px">تفريغ صوتي: ${escapeHtml(transcript)}</div>`:''}
+      ${Number(total)? `<div><strong>الإجمالي:</strong> ${total} USD</div>`:''}
       <div class="actions">
         ${status==='New' ? `<button onclick="claim('${orderId}')">استلام الطلب</button>`:''}
         ${(status==='Claimed' && claimedBy===myPhone) ? `<button onclick="markDelivered('${orderId}')">تم التوصيل</button>`:''}
@@ -135,7 +134,7 @@ async function load(){
   document.getElementById('newList').innerHTML  = listNew.join('') || '<div class="notice">لا توجد طلبات جديدة الآن.</div>';
   document.getElementById('mineList').innerHTML = listMine.join('') || '<div class="notice">لم تستلم أي طلب بعد.</div>';
 }
-// helper
+
 function badge(s){
   if(s==='New') return `<span class="badge new">جديد</span>`;
   if(s==='Claimed') return `<span class="badge claimed">محجوز</span>`;
@@ -146,23 +145,40 @@ function escapeHtml(t){return t.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;',
 
 async function claim(orderId){
   const phone = (localStorage.getItem('driverPhone')||'').trim();
-  if(!/^\d{8,15}$/.test(phone)){ flash.innerHTML='<div class="error">احفظ رقم هاتفك أولًا.</div>'; return; }
+  if(!/^\d{8,15}$/.test(phone)){
+    flash.innerHTML='<div class="error">احفظ رقم هاتفك أولًا.</div>';
+    return;
+  }
   const url = `/driver/claim?o=${encodeURIComponent(orderId)}&d=${encodeURIComponent(phone)}`;
   const res = await fetch(url);
   const txt = await res.text();
   flash.innerHTML = txt.includes('✅') ? `<div class="ok">${txt}</div>` : `<div class="error">${txt}</div>`;
   load();
 }
+
 async function markDelivered(orderId){
   const phone = (localStorage.getItem('driverPhone')||'').trim();
   const name  = (localStorage.getItem('driverName')||'').trim();
-  const res = await fetch('/api/mark-delivered',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId, driverPhone:phone, driverName:name})});
+  if(!/^\d{8,15}$/.test(phone)){
+    flash.innerHTML='<div class="error">احفظ رقم هاتفك أولًا.</div>';
+    return;
+  }
+
+  const deliveryNote = prompt('اكتب ملاحظة التسليم (اختياري):') || '';
+
+  const res = await fetch('/api/mark-delivered',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({orderId, driverPhone:phone, driverName:name, deliveryNote})
+  });
+
   const j = await res.json();
   flash.innerHTML = j.ok ? '<div class="ok">تم تسجيل التسليم.</div>' : `<div class="error">${j.error||'خطأ'}</div>`;
   load();
 }
 
-load(); setInterval(load, 5000);
+load();
+setInterval(load, 5000);
 </script>
 </body>
 </html>
