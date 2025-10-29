@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ar">
+<head><meta charset="utf-8"><title>تأكيد السائق</title></head>
+<body style="direction:rtl;font-family:Arial">
+  <h3>تأكيد طلب - للسائق</h3>
+  <label>رقم السطر في الجوجل شيت (row index): <input id="row"/></label><br/>
+  <label>اسم السائق: <input id="driver"/></label><br/>
+  <button id="picked">استلام</button>
+  <button id="delivered">تم التوصيل</button>
+  <div id="out"></div>
+  <script>
+    async function update(status){
+      const rowIndex = document.getElementById('row').value;
+      const driver = document.getElementById('driver').value;
+      const res = await fetch('/api/update-order', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ rowIndex, status, driver })
+      });
+      const j = await res.json(); document.getElementById('out').innerText = JSON.stringify(j);
+    }
+    document.getElementById('picked').onclick = ()=> update('Picked');
+    document.getElementById('delivered').onclick = ()=> update('Delivered');
+  </script>
+</body>
+</html>
