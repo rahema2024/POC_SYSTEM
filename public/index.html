@@ -1,104 +1,120 @@
 <!doctype html>
 <html lang="ar">
 <head>
-<meta charset="UTF-8">
-<title>نظام إدارة طلبات - عرض تجريبي</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>المتجر التجريبي</title>
 <style>
-  body {
-    font-family: "Tajawal", Arial, sans-serif;
-    background: #f7f9fc;
-    margin: 0;
-    padding: 0;
-    direction: rtl;
-    text-align: right;
-  }
-  .container {
-    width: 400px;
-    margin: 60px auto;
-    background: #fff;
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: 0 0 20px rgb(0 0 0 / 0.1);
-  }
-  h2 {
-    text-align: center;
-    color: #293241;
-    margin-bottom: 20px;
-  }
-  label {
-    font-weight: bold;
-    margin-top: 12px;
-    display: block;
-    color: #293241;
-  }
-  input, textarea {
-    width: 100%;
-    padding: 12px;
-    margin-top: 6px;
-    border: 1px solid #d9d9d9;
-    border-radius: 10px;
-    outline: none;
-  }
-  textarea { height: 70px; resize: none; }
-  button {
-    width: 100%;
-    background: #4f46e5;
-    color: white;
-    padding: 14px;
-    border: none;
-    border-radius: 10px;
-    font-size: 16px;
-    margin-top: 20px;
-    cursor: pointer;
-    font-weight: bold;
-  }
-  button:hover { background: #3730a3; }
-  small {
-    color: #6b7280;
-    font-size: 12px;
-  }
+  :root{--p:#4f46e5;--bg:#f7f9fc;--card:#fff;--txt:#111827}
+  body{font-family:Tajawal,Arial,sans-serif;background:var(--bg);margin:0;direction:rtl;color:var(--txt)}
+  header{background:var(--p);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+  .wrap{display:flex;gap:20px;max-width:1200px;margin:24px auto;padding:0 16px}
+  .grid{flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+  .card{background:var(--card);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.06);padding:14px;transition:.2s}
+  .card:hover{transform:translateY(-2px)}
+  .card h4{margin:8px 0}
+  .price{color:#10b981;font-weight:700}
+  .btn{background:var(--p);color:#fff;border:0;padding:10px 12px;border-radius:10px;cursor:pointer}
+  aside{width:360px;background:var(--card);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.06);padding:16px;height:fit-content;position:sticky;top:20px}
+  label{display:block;margin-top:10px;font-weight:600}
+  input,textarea{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;margin-top:6px}
+  .total{display:flex;justify-content:space-between;margin-top:10px;font-weight:700}
+  .muted{color:#6b7280;font-size:12px}
+  .cart-item{display:flex;justify-content:space-between}
 </style>
 </head>
 <body>
+<header>
+  <h2>المتجر التجريبي</h2>
+  <div>عربة الطلب</div>
+</header>
 
-<div class="container">
-  <h2>طلب جديد</h2>
-  <form id="orderForm" enctype="multipart/form-data">
-    <label>الاسم:</label>
-    <input name="name" required>
+<div class="wrap">
+  <section class="grid" id="products"></section>
 
-    <label>رقم الهاتف:</label>
-    <input name="phone" required>
-
-    <label>العنوان:</label>
-    <input name="address" required>
-
-    <label>تفاصيل الطلب:</label>
-    <textarea name="items" placeholder='مثال: {"item":"بيبسي","qty":1}'></textarea>
-
-    <label>تسجيل صوتي (اختياري):</label>
-    <input type="file" name="audio" accept="audio/*">
-
-    <button type="submit">إرسال الطلب</button>
-  </form>
+  <aside>
+    <h3>إرسال الطلب</h3>
+    <div id="cart"></div>
+    <div class="total"><span>الإجمالي:</span><span id="total">0</span> USD</div>
+    <label>الاسم<input id="name" required></label>
+    <label>الهاتف<input id="phone" required></label>
+    <label>العنوان<input id="address" required></label>
+    <label>تسجيل صوتي (اختياري)<input type="file" id="audio" accept="audio/*"></label>
+    <button class="btn" id="checkout">إرسال الطلب</button>
+    <div class="muted" id="msg"></div>
+    <hr>
+    <div class="muted">ملاحظة: الطلبات الصوتية عبر الهاتف تُسجَّل تلقائيًا وتُرسل للسائقين.</div>
+  </aside>
 </div>
 
-
 <script>
-const form = document.getElementById('orderForm');
-form.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const fd = new FormData(form);
-  const res = await fetch('/api/web-order', { method:'POST', body: fd });
-  const j = await res.json();
-  if (j.ok) {
-    alert('✅ تم إرسال الطلب بنجاح');
-    form.reset();
-  } else {
-    alert('❌ حدث خطأ: ' + (j.error || 'غير معروف'));
-  }
-});
-</script>
+const PRODUCTS = [
+  {id:1, name:"ماء 6×1.5L", price:3.5},
+  {id:2, name:"حليب", price:1.2},
+  {id:3, name:"خبز", price:0.9},
+  {id:4, name:"أرز 5كج", price:6.0},
+  {id:5, name:"عصير", price:1.5},
+  {id:6, name:"سكر 2كج", price:2.2},
+  {id:7, name:"شاي", price:1.8},
+  {id:8, name:"زيت 1.8L", price:5.4}
+];
 
+const productsEl = document.getElementById('products');
+const cartEl = document.getElementById('cart');
+const totalEl = document.getElementById('total');
+const msgEl = document.getElementById('msg');
+const cart = [];
+
+function renderProducts(){
+  productsEl.innerHTML = PRODUCTS.map(p => `
+    <div class="card">
+      <h4>${p.name}</h4>
+      <div class="price">${p.price} USD</div>
+      <button class="btn" onclick="add(${p.id})">أضف للعربة</button>
+    </div>
+  `).join('');
+}
+function add(id){
+  const p = PRODUCTS.find(x=>x.id===id);
+  const item = cart.find(x=>x.id===id);
+  if(item) item.qty++; else cart.push({...p, qty:1});
+  renderCart();
+}
+function renderCart(){
+  if (!cart.length){ cartEl.innerHTML = '<div class="muted">لا توجد عناصر بعد</div>'; totalEl.textContent='0'; return; }
+  cartEl.innerHTML = cart.map(i => `
+    <div class="cart-item">
+      <div>${i.name} × ${i.qty}</div>
+      <div>${(i.qty*i.price).toFixed(2)} USD</div>
+    </div>
+  `).join('');
+  totalEl.textContent = cart.reduce((s,i)=>s+i.qty*i.price,0).toFixed(2);
+}
+renderProducts(); renderCart();
+
+document.getElementById('checkout').onclick = async ()=>{
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const audio = document.getElementById('audio').files[0];
+  if(!name || !phone || !address || cart.length===0){ alert('أكمل البيانات وأضف منتجًا'); return; }
+
+  const fd = new FormData();
+  fd.append('name', name);
+  fd.append('phone', phone);
+  fd.append('address', address);
+  fd.append('items', JSON.stringify(cart));
+  fd.append('total', totalEl.textContent);
+  if (audio) fd.append('audio', audio);
+
+  const res = await fetch('/api/cart/checkout', { method:'POST', body:fd });
+  const j = await res.json();
+  if (j.ok){
+    msgEl.textContent = '✅ تم إرسال الطلب وإشعار السائقين. رقم الطلب: ' + j.orderId;
+    cart.length=0; renderCart(); totalEl.textContent='0';
+  } else {
+    msgEl.textContent = '❌ ' + (j.error||'خطأ غير معروف');
+  }
+};
+</script>
 </body>
 </html>
