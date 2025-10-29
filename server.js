@@ -163,26 +163,24 @@ app.post('/api/cart/checkout', async (req,res)=>{
 });
 
 /** ====== Driver flows ====== **/
-app.get('/driver/claim', async (req,res)=>{
+app.post('/api/mark-delivered', async (req,res)=>{
   try{
-    const { o:orderId, d:driverPhone } = req.query;
-    if(!orderId || !driverPhone) return res.status(400).send('Missing params');
+    const { orderId, driverPhone, driverName, deliveryNote } = req.body;
+    if (!orderId || !driverPhone) return res.status(400).json({ok:false,error:'missing params'});
+
     const rows = await getAllRows(SHEET_ORDERS);
     let rowIndex=-1;
     for(let i=1;i<rows.length;i++){ if ((rows[i][0]||'')===orderId){rowIndex=i+1;break;} }
-    if (rowIndex===-1) return res.status(404).send('Order not found');
+    if (rowIndex===-1) return res.status(404).json({ok:false,error:'order not found'});
 
-    const row=rows[rowIndex-1], status=row[10]||'New', claimedBy=row[11]||'';
-    if (status!=='New' && !(status==='Claimed' && claimedBy===driverPhone)) {
-      return res.send('❌ الطلب غير متاح أو محجوز.');
-    }
-    const now = new Date().toISOString();
-    await updateRange(SHEET_ORDERS, rowIndex, 11, [['Claimmed', driverPhone, now, '', driverPhone, '']]);
+    const deliveredAt = new Date().toISOString();
+    // K..P = [status, claimed_by, claimed_at, delivered_at, driver_phone, delivery_note]
+    await updateRange(SHEET_ORDERS, rowIndex, 11, [['Delivered', '', '', deliveredAt, driverPhone, deliveryNote || '' ]]);
 
-    res.send('✅ تم حجز الطلب لك.');
-  }catch(e){ console.error(e); res.status(500).send('Error'); }
+    await bumpDriverDelivered({ driverPhone, driverName }); // يسجّل السائق في Sheet Drivers ويحدّث العدادات
+    res.json({ ok:true });
+  }catch(e){ console.error(e); res.status(500).json({ok:false,error:e.message}); }
 });
-
 app.post('/api/mark-delivered', async (req,res)=>{
   try{
     const { orderId, driverPhone, driverName, deliveryNote } = req.body;
@@ -208,3 +206,4 @@ app.get('/api/admin/orders', async (_req,res)=>{
 app.get('/admin', (_req,res)=>res.sendFile(path.join(__dirname,'public/admin.html')));
 
 app.listen(PORT, ()=>console.log(`🚀 Server running on port ${PORT}`));
+
