@@ -34,6 +34,7 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
+app.get('/driver', (_req,res)=>res.sendFile(require('path').join(__dirname,'public/driver.html')));
 app.get('/healthz', (_,res)=>res.send('ok'));
 
 /** ====== Google Sheets Client ====== **/
@@ -303,3 +304,4 @@ app.post('/api/voice', bodyParser.urlencoded({extended:true}), async (req,res)=>
 app.get('/admin', (_req,res)=>res.sendFile(path.join(__dirname,'public/admin.html')));
 
 app.listen(PORT, ()=>console.log(`🚀 Server running on port ${PORT}`));
+
