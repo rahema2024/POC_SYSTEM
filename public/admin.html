@@ -1,19 +1,31 @@
 <!doctype html>
 <html lang="ar">
-<head><meta charset="utf-8"><title>لوحة الإدارة</title></head>
-<body style="direction:rtl;font-family:Arial">
-  <h3>لوحة عرض الطلبات (POC)</h3>
-  <button id="refresh">تحديث</button>
-  <pre id="out"></pre>
-  <script>
-    async function refresh(){
-      const res = await fetch('/api/admin/orders');
-      const j = await res.json();
-      if (j.ok) document.getElementById('out').innerText = JSON.stringify(j.rows, null, 2);
-      else document.getElementById('out').innerText = 'Error';
-    }
-    document.getElementById('refresh').onclick = refresh;
-    refresh();
-  </script>
+<head><meta charset="utf-8"><title>لوحة الطلبات</title>
+<style>
+body{font-family:Tajawal,Arial,sans-serif;direction:rtl;background:#f7f9fc;margin:0}
+h2{background:#4f46e5;color:#fff;margin:0;padding:14px}
+table{width:100%;border-collapse:collapse;background:#fff}
+th,td{border:1px solid #e5e7eb;padding:8px;font-size:14px}
+.wrap{max-width:1200px;margin:16px auto;background:#fff;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,.06);overflow:hidden}
+</style>
+</head>
+<body>
+<h2>الطلبات (عرض سريع)</h2>
+<div class="wrap">
+  <table id="t"><thead></thead><tbody></tbody></table>
+</div>
+<script>
+async function load(){
+  const r = await fetch('/api/admin/orders');
+  const j = await r.json();
+  const rows = j.rows||[];
+  if(!rows.length) return;
+  const thead = document.querySelector('#t thead');
+  const tbody = document.querySelector('#t tbody');
+  thead.innerHTML = '<tr>' + rows[0].map(h=>`<th>${h}</th>`).join('') + '</tr>';
+  tbody.innerHTML = rows.slice(1).map(r=>'<tr>'+r.map(c=>`<td>${c||''}</td>`).join('')+'</tr>').join('');
+}
+load();
+</script>
 </body>
 </html>
