@@ -1,26 +1,23 @@
 <!doctype html>
 <html lang="ar">
-<head><meta charset="utf-8"><title>تأكيد السائق</title></head>
-<body style="direction:rtl;font-family:Arial">
-  <h3>تأكيد طلب - للسائق</h3>
-  <label>رقم السطر في الجوجل شيت (row index): <input id="row"/></label><br/>
-  <label>اسم السائق: <input id="driver"/></label><br/>
-  <button id="picked">استلام</button>
-  <button id="delivered">تم التوصيل</button>
-  <div id="out"></div>
-  <script>
-    async function update(status){
-      const rowIndex = document.getElementById('row').value;
-      const driver = document.getElementById('driver').value;
-      const res = await fetch('/api/update-order', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ rowIndex, status, driver })
-      });
-      const j = await res.json(); document.getElementById('out').innerText = JSON.stringify(j);
-    }
-    document.getElementById('picked').onclick = ()=> update('Picked');
-    document.getElementById('delivered').onclick = ()=> update('Delivered');
-  </script>
+<head><meta charset="utf-8"><title>تأكيد السائق</title>
+<style>body{font-family:Tajawal,Arial,sans-serif;direction:rtl;padding:20px}</style>
+</head>
+<body>
+<h3>تحديث الطلب</h3>
+<label>رقم الطلب: <input id="orderId"></label><br><br>
+<label>هاتف السائق: <input id="driverPhone"></label><br><br>
+<label>اسم السائق (اختياري): <input id="driverName"></label><br><br>
+<button id="del">تأكيد التسليم (Delivered)</button>
+<pre id="out"></pre>
+<script>
+document.getElementById('del').onclick = async ()=>{
+  const orderId = document.getElementById('orderId').value.trim();
+  const driverPhone = document.getElementById('driverPhone').value.trim();
+  const driverName = document.getElementById('driverName').value.trim();
+  const r = await fetch('/api/mark-delivered', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({orderId,driverPhone,driverName})});
+  document.getElementById('out').textContent = await r.text();
+};
+</script>
 </body>
 </html>
