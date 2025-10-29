@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ar">
+<head><meta charset="utf-8"><title>لوحة الإدارة</title></head>
+<body style="direction:rtl;font-family:Arial">
+  <h3>لوحة عرض الطلبات (POC)</h3>
+  <button id="refresh">تحديث</button>
+  <pre id="out"></pre>
+  <script>
+    async function refresh(){
+      const res = await fetch('/api/admin/orders');
+      const j = await res.json();
+      if (j.ok) document.getElementById('out').innerText = JSON.stringify(j.rows, null, 2);
+      else document.getElementById('out').innerText = 'Error';
+    }
+    document.getElementById('refresh').onclick = refresh;
+    refresh();
+  </script>
+</body>
+</html>
