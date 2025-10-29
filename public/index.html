@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ar">
+<head><meta charset="utf-8"><title>المتجر - POC</title></head>
+<body style="direction:rtl;font-family:Arial">
+  <h2>متجر تجريبي</h2>
+  <p>أضف منتج إلى العربة ثم اضغط Checkout</p>
+  <div id="cart">العربة: <span id="items">--</span></div>
+  <hr>
+  <form id="orderForm" enctype="multipart/form-data">
+    <label>الاسم: <input name="name" required></label><br/>
+    <label>الهاتف: <input name="phone" required></label><br/>
+    <label>العنوان: <input name="address" required></label><br/>
+    <label>تفاصيل الطلب (JSON أو نص): <textarea name="items">{"item":"مثال","qty":1}</textarea></label><br/>
+    <label>تسجيل صوتي (اختياري): <input type="file" name="audio" accept="audio/*"></label><br/>
+    <label>المجموع (USD): <input name="total" value="0"></label><br/>
+    <button type="submit">إرسال الطلب</button>
+  </form>
+
+  <script>
+    const form = document.getElementById('orderForm');
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(form);
+      const res = await fetch('/api/web-order', { method:'POST', body: fd });
+      const j = await res.json();
+      if (j.ok) {
+        alert('تم إرسال الطلب — شكراً');
+        if (j.checkoutUrl) window.location = j.checkoutUrl; // Stripe checkout
+      } else alert('خطأ: ' + (j.error || 'unknown'));
+    });
+  </script>
+</body>
+</html>
