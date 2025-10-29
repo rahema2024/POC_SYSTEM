@@ -62,6 +62,7 @@ async function load(){
     const id=r[0]||'', created=r[1]||'', chan=r[2]||'', name=r[3]||'', phone=r[4]||'', addr=r[5]||'';
     const items=r[6]||'', total=r[7]||'0', audio=r[8]||'', trans=r[9]||'';
     const status=r[10]||'New', claimedBy=r[11]||'', claimedAt=r[12]||'', deliveredAt=r[13]||'';
+    const driverPhone=r[14]||'', note=r[15]||''; // ✅ إضافة note هنا
 
     if (st && status!==st) continue;
     const blob = (id+name+phone+addr+items).toLowerCase();
@@ -74,10 +75,12 @@ async function load(){
       <td>${total||'0'}</td>
       <td>${audio? `<audio controls src="${audio}"></audio>` : '<span class="meta">—</span>'}</td>
       <td>${badge(status)}</td>
-      <td>${claimedBy||'—'}</td>
-      <td><div class="meta">استلام: ${claimedAt? new Date(claimedAt).toLocaleString('ar-KW'):'—'}</div>
-          <div class="meta">تسليم: ${deliveredAt? new Date(deliveredAt).toLocaleString('ar-KW'):'—'}</div>
-          ${trans? `<div class="meta">تفريغ: ${trans}</div>`:''}
+      <td>${driverPhone||'—'}</td>
+      <td>
+        <div class="meta">استلام: ${claimedAt? new Date(claimedAt).toLocaleString('ar-KW'):'—'}</div>
+        <div class="meta">تسليم: ${deliveredAt? new Date(deliveredAt).toLocaleString('ar-KW'):'—'}</div>
+        ${trans? `<div class="meta">تفريغ: ${trans}</div>`:''}
+        ${note? `<div class="meta">ملاحظة السائق: ${note}</div>`:''} <!-- ✅ تمت إضافة ملاحظة السائق -->
       </td>
     </tr>`;
   }
